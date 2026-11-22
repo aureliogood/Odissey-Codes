@@ -1,0 +1,282 @@
+# =============================================================
+#  OdisseyCodes - configuracion
+# =============================================================
+#
+#  Version del archivo de configuracion (no la cambies a mano).
+config-version: 2
+
+#  Declara aqui todos los codigos que quieras. Cada codigo tiene sus
+#  propios comandos de recompensa, que se ejecutan desde la consola
+#  cuando un jugador lo canjea.
+#
+#  Marcadores que puedes usar dentro de cada comando:
+#    %player%   -> nombre del jugador que canjea
+#    %code%     -> el codigo canjeado
+#    %initial%  -> usos maximos del codigo (o "inf" si es ilimitado)
+#
+#  NOTA: los comandos NO deben empezar por "/".
+
+# ---------------------------------------------------------------
+#  ALMACENAMIENTO
+# ---------------------------------------------------------------
+# Donde se guardan los codigos y los canjes:
+#   yaml   -> codigos en este config, canjes en redenciones.yml (por defecto)
+#   sqlite -> un archivo local codes.db (un solo servidor)
+#   mysql  -> una base de datos compartida (necesaria para un panel web o
+#             un bot de Discord). Funciona con MySQL y MariaDB.
+storage:
+  type: yaml
+  # Prefijo de las tablas, para que varios servidores compartan una misma BD.
+  table-prefix: "odisseycodes_"
+  # Cada cuantos segundos el plugin busca codigos creados/editados desde
+  # fuera (web/bot). Solo se usa con sqlite/mysql.
+  sync-seconds: 30
+  # Si la base de datos aun no tiene codigos, copia los de la seccion de
+  # abajo (util al pasar de yaml a mysql). Pon false para ignorar el config.
+  seed-from-config: true
+  mysql:
+    host: localhost
+    port: 3306
+    database: odisseycodes
+    user: root
+    password: ""
+
+# Los codigos se comparan sin distinguir mayusculas/minusculas cuando esto
+# es true, asi que un jugador puede escribir "bienvenido", "BIENVENIDO" o
+# "BiEnVeNiDo" y funciona.
+ignore-case: true
+
+# Un codigo solo se puede canjear UNA vez por jugador. Con esto activado
+# tampoco se puede canjear dos veces desde la misma IP, para que una cuenta
+# alternativa en la misma conexion no lo canjee otra vez.
+once-per-ip: true
+
+# Tiempo minimo jugado (en SEGUNDOS) que debe tener un jugador en el
+# servidor antes de poder canjear CUALQUIER codigo. 3600 = 1 hora. Usa 0
+# para desactivarlo. Tambien acepta "1h"/"90m".
+min-play-time: 3600
+
+# Borra el codigo del config cuando se agoten todos sus usos.
+# Por defecto NO, para que tu config nunca se toque sin avisar.
+delete-when-exhausted: false
+
+# Bloquea temporalmente los intentos fallidos repetidos por jugador.
+security:
+  max-failed-attempts: 5
+  lockout-seconds: 60
+
+# Nombre de un codigo existente cuyos comandos de recompensa se copian al
+# usar /codes generate. Debe apuntar a un codigo de la seccion de abajo.
+generate-template: "EVENTO"
+
+# ---------------------------------------------------------------
+#  INVITACIONES  ("Crea tu propio codigo")
+# ---------------------------------------------------------------
+# Cada jugador puede crear UN codigo de invitacion personal (boton del menu
+# de dialogo). Cuando OTRO jugador lo canjea, el dueño recibe dinero AUNQUE
+# ESTE DESCONECTADO, y al alcanzar la meta de personas distintas recibe un
+# bono de una sola vez.
+#
+#   enabled          -> activa/desactiva toda la funcion
+#   dinero-por-uso   -> dinero que recibe el dueño por cada persona que usa el codigo
+#   meta             -> cuantas personas distintas hacen falta para el bono
+#   bono             -> dinero de una sola vez que recibe el dueño al llegar a 'meta'
+#   prefijo-codigo   -> prefijo del codigo generado (REF-XXXXXX)
+#   comando-pago     -> comando de consola para pagar. Funciona en desconexion
+#                       porque busca al jugador por nombre. %jugador% = nombre
+#                       del dueño, %cantidad% = cantidad. Vale para cualquier
+#                       economia con comando de consola (EssentialsX: "eco give").
+#   comandos-pago    -> (opcional) una lista de comandos en vez de uno solo
+#
+# Anti-trampas: un jugador no puede usar su propio codigo, la misma persona
+# solo cuenta una vez y (con once-per-ip) ni las cuentas alternativas de la
+# conexion del dueño ni una conexion que ya uso el codigo pueden contar.
+referidos:
+  enabled: true
+  dinero-por-uso: 5000
+  meta: 10
+  bono: 30000
+  prefijo-codigo: "REF-"
+  comando-pago: "eco give %jugador% %cantidad%"
+
+# ---------------------------------------------------------------
+#  CODIGOS
+# ---------------------------------------------------------------
+# Opciones por codigo:
+#   enabled         -> (opcional) false para dejar el codigo inactivo (por defecto true)
+#   uses            -> cuantas veces se puede canjear (0 = ilimitado)
+#   uses-per-player -> cuantas veces UN jugador puede canjearlo (por defecto 1)
+#   recompensas     -> comandos de recompensa, ejecutados desde la consola
+#   reward-mode     -> all (todas las recompensas) o random (una al azar)
+#   campaign        -> grupo asignable con /codes campaign set <codigo> <nombre>
+#   reward-money    -> dinero directo mediante Vault
+#   reward-items    -> lista de objetos como "DIAMOND:5" o "GOLDEN_APPLE:1"
+#   duration        -> (opcional) el codigo caduca N despues de crearse:
+#                      "30m", "12h", "7d", "2w" o combinado tipo "1d12h"
+#   expires-at      -> (opcional) una fecha absoluta: "31/12/2026" o
+#                      "31/12/2026 23:59" (tambien acepta "2026-12-31 23:59")
+#   conditions      -> (opcional) requisitos para canjear el codigo. Se deben
+#                      cumplir TODOS los que pongas:
+#                        time-played -> tiempo minimo jugado en SEGUNDOS (numero
+#                                       suelto) o "30m"/"1d"
+#                        money       -> saldo minimo (necesita Vault; si no hay
+#                                       economia, el codigo no se puede canjear)
+#                        permission  -> el rango/permiso necesario
+#                        world       -> solo canjeable en este mundo
+#
+# En modo sqlite/mysql las recompensas y los usos viven en la base de datos
+# (creados con /codes generate, el panel web o el bot de Discord), PERO si un
+# codigo de aqui tiene el MISMO nombre que uno de la base de datos, las
+# "conditions" que pongas abajo se le aplican a ese codigo de la BD. Asi
+# puedes exigir rango/mundo/tiempo/dinero sin tocar la base de datos.
+codes:
+  BIENVENIDO:
+    uses: 100          # 0 = ilimitado
+    reward-mode: all
+    reward-money: 0
+    reward-items: []
+    recompensas:
+      - 'give %player% diamond 5'
+      - 'say %player% ha canjeado el codigo %code%'
+
+  EVENTO:
+    uses: 0            # ilimitado
+    # enabled: false   # opcional: dejarlo inactivo
+    # duration: 7d     # opcional: caduca 7 dias despues de crearse
+    # expires-at: "31/12/2026 23:59"   # opcional: fecha absoluta
+    recompensas:
+      - 'eco give %player% 5000'
+    # conditions:      # opcional: el jugador debe cumplir TODAS estas
+    #   time-played: 60            # al menos 60 segundos (1 minuto) jugado
+    #   money: 10000               # al menos 10000 (necesita Vault)
+    #   permission: "group.vip"    # rango/permiso necesario
+    #   world: "world_evento"      # solo en este mundo
+
+# ---------------------------------------------------------------
+#  SONIDOS
+# ---------------------------------------------------------------
+# Usa "none" para desactivar un sonido. Se aceptan los dos estilos de nombre:
+#   moderno -> "ui.button.click", "entity.player.levelup", "entity.villager.no"
+#   enum    -> "UI_BUTTON_CLICK", "ENTITY_PLAYER_LEVELUP", "ENTITY_VILLAGER_NO"
+#   enabled -> interruptor general de todos los sonidos
+#   open    -> al abrir el menu de dialogo
+#   success -> al canjear un codigo correctamente
+#   reward  -> celebracion al recibir la recompensa
+#   error   -> cuando algo falla
+#   create  -> al crear el propio codigo de invitacion
+#   delete  -> al borrar un codigo (admin)
+#   select  -> al activar/desactivar un codigo (admin)
+sounds:
+  enabled: true
+  open: "ui.button.click"
+  success: "entity.player.levelup"
+  reward: "ui.toast.challenge_complete"
+  error: "entity.villager.no"
+  create: "entity.experience_orb.pickup"
+  delete: "entity.item.break"
+  select: "ui.button.click"
+
+# ---------------------------------------------------------------
+#  PARTICULAS
+# ---------------------------------------------------------------
+# Se lanza una rafaga de particulas alrededor del jugador. Usa "none" para
+# desactivar. Se aceptan los dos estilos de nombre:
+#   nombre -> "TOTEM_OF_UNDYING", "HEART", "VILLAGER_HAPPY", "SMOKE"
+#   claves -> "minecraft:totem_of_undying", "minecraft:heart"
+#   enabled -> interruptor general de todas las particulas
+#   success -> particulas al canjear un codigo
+#   error   -> particulas cuando algo falla
+#   count   -> cuantas particulas lanzar cada vez
+particles:
+  enabled: true
+  success: "TOTEM_OF_UNDYING"
+  error: "SMOKE"
+  count: 30
+
+# ---------------------------------------------------------------
+#  TITULOS
+# ---------------------------------------------------------------
+# Se muestran en pantalla. Deja un valor vacio ("") para omitirlo.
+# Marcador disponible:
+#   %motivo% -> el mensaje de error (solo en el titulo/subtitulo de error)
+#   enabled  -> interruptor general de los titulos
+titles:
+  enabled: true
+  success-title: "&a&lCANJEADO"
+  success-subtitle: "&7Disfruta tu recompensa"
+  error-title: "&c&lERROR"
+  error-subtitle: "&7%motivo%"
+
+# ---------------------------------------------------------------
+#  MENSAJES (menu de dialogo + chat)
+# ---------------------------------------------------------------
+# El prefijo solo se pone delante de los mensajes de chat. Los valores de
+# abajo estan en español a proposito: son lo que ve el jugador.
+messages:
+  prefix: "&8[&eODISSEY&8] &r"
+  title: "&6Menu de codigos"
+  body: "&7Escribe tu codigo abajo y pulsa &eCanjear&7."
+  label: "Codigo"
+  button-redeem: "&a&lCanjear"
+  button-close: "&c&lCerrar"
+  button-referral: "&e&lCrea tu propio codigo"
+  button-referral-hover:
+    - "&e&lCrea tu propio codigo"
+    - "&7Invita amigos y haz que usen tu codigo!"
+    - "&7Cada codigo te dara &a$%dinero%"
+    - "&7Cuando %meta% personas hayan usado tu codigo recibiras &a$%bono%"
+    - "&7Solo disponible una vez!"
+  button-referral-code: "&bTu codigo: &f%code%"
+  button-referral-count: "&7Invitados: &f%total%&7/&f%meta%"
+  redeemed: "&aHas canjeado &e%code%&a y recibido tu recompensa."
+  reward-failed: "&eTu canje se registro, pero una recompensa fallo. Avisa a un administrador."
+  invalid: "&cEse codigo no existe."
+  already-used: "&cYa canjeaste ese codigo."
+  ip-used: "&cEse codigo ya se canjeo desde tu conexion."
+  exhausted: "&cEse codigo ya no tiene usos disponibles."
+  expired: "&cEse codigo ha caducado."
+  condition-permission: "&cNecesitas el rango/permiso &e%permiso%&c para canjear ese codigo."
+  condition-time: "&cNecesitas al menos %tiempo% de tiempo jugado (llevas %actual%)."
+  condition-playtime: "&cNecesitas al menos %tiempo% jugado en el servidor (llevas %actual%)."
+  condition-money: "&cNecesitas al menos %dinero% para canjear ese codigo (tienes %actual%)."
+  condition-money-novault: "&cEse codigo pide dinero, pero el servidor no tiene economia (Vault) configurada."
+  condition-world: "&cEse codigo solo se puede canjear en el mundo %mundo%."
+  referral-redeemed: "&aHas canjeado la invitacion de &e%dueno%&a. Gracias!"
+  referral-own: "&cNo puedes usar tu propio codigo de invitacion."
+  referral-owner-used: "&e%jugador% &7ha usado tu codigo de invitacion. Has ganado &a$%cantidad%&7. Invitados: &f%total%&7/&f%meta%"
+  referral-owner-bonus: "&a&lBONO! &7Has llegado a &f%meta% &7invitados y ganas &a$%bono%&7!"
+  referral-disabled: "&cLa funcion de codigos de invitacion esta desactivada."
+  empty-code: "&eEscribe un codigo primero."
+  players-only: "&cSolo un jugador puede abrir el menu."
+  no-permission: "&cNo tienes permiso para eso."
+  usage: "&eUso: /codes | redeem <codigo> | list | info <codigo> | preview <codigo> | history [jugador|codigo] | campaign | import|export <archivo> | backup"
+  reloaded: "&aConfig recargada."
+  list-header: "&8&m-----&r &eCodigos &7(%total%) &8&m-----"
+  list-item: "&8- &e%code% &7[%state%&7] &7usos &f%used%&7/&f%initial% &7caduca &f%expires%"
+  list-page: "&7Pagina &f%page%&7/&f%pages%&7. Usa &f/codes list <pagina>&7."
+  list-empty: "&7No hay ningun codigo definido."
+  state-active: "&aACTIVO"
+  state-exhausted: "&cAGOTADO"
+  state-expired: "&6CADUCADO"
+  state-inactive: "&8INACTIVO"
+  info-header: "&8&m-----&r &eCodigo %code% &8&m-----"
+  info-line: "&7%clave%: &f%valor%"
+  info-usage: "&eUso: /codes info <codigo>"
+  enabled-ok: "&aCodigo &e%code%&a activado."
+  disabled-ok: "&cCodigo &e%code%&c desactivado."
+  enable-usage: "&eUso: /codes enable <codigo>"
+  disable-usage: "&eUso: /codes disable <codigo>"
+  delete-usage: "&eUso: /codes delete <codigo>"
+  deleted: "&aCodigo &e%code%&a eliminado (&7%canjes% canjes borrados&a)."
+  stats-header: "&8&m-----&r &eEstadisticas &8&m-----"
+  stats-total: "&7Codigos: &f%codes% &7| Canjes totales: &f%redemptions%"
+  stats-item: "&8- &e%code% &7- &f%used% &7canjes"
+  stats-empty: "&7Aun no hay canjes registrados."
+  reset-ok: "&aCodigo &e%code%&a reseteado para &e%player%&a."
+  reset-fail: "&c%player% no ha canjeado &e%code%&c."
+  generated: "&aCodigo creado: &e%code% &7(usos: &f%uses%&7, caduca: &f%expires%&7)"
+  generate-usage: "&eUso: /codes generate <usos> <tiempo> [prefijo] &7(tiempo: 30m, 12h, 7d, 2w... o 0 = sin caducidad)"
+  generate-bad-time: "&cTiempo invalido. Usa 30m, 12h, 7d, 2w o 0."
+  generate-no-template: "&cDefine 'generate-template' en el config con el nombre de un codigo existente cuyos comandos se copiaran."
+  player-not-found: "&cNo encuentro a ese jugador."
+  code-not-found: "&cEse codigo no existe."

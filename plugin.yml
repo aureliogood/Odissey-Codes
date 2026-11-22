@@ -1,0 +1,25 @@
+name: OdisseyCodes
+version: 1.1.0
+main: es.odissey.codes.OdisseyCodes
+api-version: '1.21'
+author: ocampo05
+
+# Paper carga estos drivers para el plugin (necesarios en modo sqlite/mysql).
+libraries:
+  - org.xerial:sqlite-jdbc:3.49.1.0
+  - com.mysql:mysql-connector-j:9.3.0
+
+commands:
+  codes:
+    description: "Canjea códigos y ofrece herramientas de administración, historial, campañas y respaldos."
+    usage: "/codes | /codes redeem <codigo> | /codes list | /codes info <codigo> | /codes preview <codigo> | /codes history [jugador|codigo] | /codes campaign"
+    aliases: [code]
+    permission: odisseycodes.usar
+
+permissions:
+  odisseycodes.usar:
+    description: Permite abrir el menu de codigos y canjear.
+    default: true
+  odisseycodes.admin:
+    description: Permite gestionar codigos, campañas, importaciones, exportaciones, historial y respaldos.
+    default: op
